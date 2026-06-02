@@ -1,0 +1,43 @@
+name: PR Branch Probe Upstream
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print pull_request branch context
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "GITHUB_REF=${GITHUB_REF}"
+          echo "GITHUB_REF_NAME=${GITHUB_REF_NAME}"
+          echo "GITHUB_BASE_REF=${GITHUB_BASE_REF}"
+          echo "GITHUB_HEAD_REF=${GITHUB_HEAD_REF}"
+          echo "github.event.pull_request.base.ref=${{ github.event.pull_request.base.ref }}"
+          echo "github.event.pull_request.head.ref=${{ github.event.pull_request.head.ref }}"
+          echo "github.event.pull_request.head.repo.full_name=${{ github.event.pull_request.head.repo.full_name }}"
+          echo "github.event.pull_request.head.sha=${{ github.event.pull_request.head.sha }}"
+
+      - name: Persist upstream probe payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' '${{ toJson(github.event) }}' > github_event.json
+          printf '%s\n' '${{ toJson(github) }}' > github_context.json
+
+      - name: Upload upstream probe artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-branch-probe-upstream-${{ github.run_id }}
+          path: |
+            github_event.json
+            github_context.json
